@@ -13,7 +13,7 @@ import statistics
 
 def drawgraph():
     fnam = "test_results.txt"
-    problInst = "Part2_b.py"
+    problInst = "Part3_b.py"
     category = "scaled"
 
 

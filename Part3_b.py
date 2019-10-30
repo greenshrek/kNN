@@ -1,29 +1,30 @@
 """
 Author: Pranav Srivastava
-Detail: Distance Weighted KNN Classification
+Detail: Distance Weighted KNN Regression
 """
+
 
 import numpy as np
 import sys
 
-class DistanceWeightedKNNClassification:
+class DistanceWeightedKNNRegression:
 
     def __init__(self, k, trainingdataset, testdataset):
         self.k = k
-        self.num_of_features = 10
+        self.num_of_features = 12
         self.trainingdataset = trainingdataset
         self.testdataset = testdataset
         self.accurate_predictions = 0
+        self.predicted_regressions = np.empty(shape=[0])
+        self.actual_regression  = np.empty(shape=[0])
         self.accuracy = 0
 
-
-    def calculateDistances(self, training_data, test_instance):
+    def calculateDistances(self,training_data, test_instance):
 
         result = np.empty(shape=[0,0])
         ind = np.empty(shape=[0])
 
-        #training_data = training_data[:,:-1]
-        #test_instance = test_instance[:-1]
+        #slice numpy array to leave the class columnn
         
         #reshaping the single query instance into 2d numpy so that it can be computed for eucledian distance
         test_instance = np.reshape(test_instance, (1, self.num_of_features))
@@ -33,20 +34,13 @@ class DistanceWeightedKNNClassification:
         ind = np.argsort(result, axis=1) # sorts along last axis (across)
         return result, ind
 
-    def votesDW(self, distances, labeled_classes):
-        mapping = {}
-        n = 1
-        for i in range(0, distances.size):
-            index = labeled_classes[0][i]
-            print("index: ", index)
-            if index in mapping:
-                mapping[labeled_classes[0][i]] = mapping[labeled_classes[0][i]] + 1/distances[0][i]
-            else:
-                mapping[index] = 1/(distances[0][i]**n)
-            print(distances[0][i])
-        return max(mapping, key=mapping.get)
+    def predictRegression(self, distances, testdata_regression):
 
+        w = (np.sum(np.square(np.reciprocal(distances))))
+        wfx = np.sum(np.multiply(testdata_regression,np.square(np.reciprocal(distances))))
+        fx = wfx/w
 
+        return fx
 
     def minmaxscaler(self):
     # This method and scales the training and test data using min-max scaling.
@@ -65,8 +59,6 @@ class DistanceWeightedKNNClassification:
         n_test = testdataset-min
 
         return np.nan_to_num(np.divide(n_train,d_train)), np.nan_to_num(np.divide(n_test,d_train))
-
-
 
 
     def predictkNNClass(self):
@@ -95,23 +87,47 @@ class DistanceWeightedKNNClassification:
             ind = result[1]
             
             k_near_distances = (np.take(distances, ind))[:,0:self.k]
-            labeled_classes = (np.take(class_vector_training, ind))[:,0:self.k]
+            training_vector = (np.take(class_vector_training, ind))[:,0:self.k]
 
-            voteDW = self.votesDW(k_near_distances, labeled_classes)
-            print(k_near_distances,labeled_classes)
-            print("vote>>",voteDW)
+            regressionValue = self.predictRegression(k_near_distances, training_vector)
+            print(k_near_distances,training_vector)
+            print("regressionValue>>",regressionValue)
 
-            knnResult.append(voteDW)
+            knnResult.append(regressionValue)
 
-            if voteDW == class_vector_test[i]:
-                self.accurate_predictions +=1
+            #if voteDW == class_vector_test[i]:
+            #    self.accurate_predictions +=1
+        self.predicted_regressions = np.array(knnResult)
+        self.actual_regression = class_vector_test
+        print("class vector test>>",class_vector_test)
+        
+        print("R2 metric is: ", self.r2metric())
 
-        print("predictions: ",knnResult)
-        print("accuracy: ", ((self.accurate_predictions/test_data_size)*100))
-        self.accuracy = ((self.accurate_predictions/test_data_size)*100)
+        #print("predictions>>> ",self.predicted_regressions)
+        #print("accuracy: ", ((self.accurate_predictions/test_data_size)*100))
 
-testdataset = np.genfromtxt('data/classification/testData.csv', delimiter=',')
-trainingdataset = np.genfromtxt('data/classification/trainingData.csv', delimiter=',')
+
+    def r2metric(self):
+        #np.average(class_vector_test)
+        pregressions = np.reshape(self.predicted_regressions, (1, self.predicted_regressions.shape[0]))
+        actualreg = np.reshape(self.actual_regression, (1, self.actual_regression.shape[0]))
+        avg = np.average(actualreg)
+
+        sumofsquaredresiduals = -2 * np.dot(pregressions, actualreg.T) + np.sum(actualreg**2,    axis=1) + np.sum(pregressions**2, axis=1)[:, np.newaxis]
+        #print("sum of residuals: ",sumofsquaredresiduals[0][0])
+
+        totalsumofsquares = np.sum(np.square(actualreg - avg))
+
+        #print("total sum of squares", totalsumofsquares)
+        rsquare = 1-(sumofsquaredresiduals[0][0]/totalsumofsquares)
+        #print("rsquare", 1-(sumofsquaredresiduals[0][0]/totalsumofsquares))
+        self.accuracy = rsquare
+        print("accuracy percentage: ",rsquare*100)
+        return rsquare
+
+
+testdataset = np.genfromtxt('data/regression/testData.csv', delimiter=',')
+trainingdataset = np.genfromtxt('data/regression/trainingData.csv', delimiter=',')
 
 #trainingdataset = np.genfromtxt('trainingset.csv', delimiter=',')
 #testdataset = np.genfromtxt('test.csv', delimiter=',')
@@ -121,13 +137,13 @@ filename = sys.argv[2]
 remark = sys.argv[3]
 
 
-dwknnc = DistanceWeightedKNNClassification(k, trainingdataset, testdataset)
+dwknnr = DistanceWeightedKNNRegression(k, trainingdataset, testdataset)
 
-dwknnc.predictkNNClass()
+dwknnr.predictkNNClass()
 
 results = []
-results.append(dwknnc.k)
-results.append(dwknnc.accuracy)
+results.append(dwknnr.k)
+results.append(dwknnr.accuracy)
 results.append(filename)
 results.append(remark)
 

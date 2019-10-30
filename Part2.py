@@ -1,3 +1,8 @@
+"""
+Author: Pranav Srivastava
+Detail: Distance Weighted KNN Classification
+"""
+
 import numpy as np
 import sys
 
@@ -30,6 +35,8 @@ class DistanceWeightedKNNClassification:
         return result, ind
 
     def votesDW(self, distances, labeled_classes):
+        # This calcuates the votes.
+        
         mapping = {}
         n = 1
         for i in range(0, distances.size):
@@ -70,8 +77,6 @@ class DistanceWeightedKNNClassification:
             labeled_classes = (np.take(class_vector_training, ind))[:,0:self.k]
 
             voteDW = self.votesDW(k_near_distances, labeled_classes)
-            print(k_near_distances,labeled_classes)
-            print("vote>>",voteDW)
 
             knnResult.append(voteDW)
 
@@ -86,23 +91,20 @@ class DistanceWeightedKNNClassification:
 testdataset = np.genfromtxt('data/classification/testData.csv', delimiter=',')
 trainingdataset = np.genfromtxt('data/classification/trainingData.csv', delimiter=',')
 
-#trainingdataset = np.genfromtxt('trainingset.csv', delimiter=',')
-#testdataset = np.genfromtxt('test.csv', delimiter=',')
-
 k = int(sys.argv[1])
 filename = sys.argv[2]
 remark = sys.argv[3]
 
-
+#initializing the class
 dwknnc = DistanceWeightedKNNClassification(k, trainingdataset, testdataset)
 
 dwknnc.predictkNNClass()
-
+#create data for the results file
 results = []
 results.append(dwknnc.k)
 results.append(dwknnc.accuracy)
 results.append(filename)
 results.append(remark)
-
+#append results to the file
 with open('test_results.txt', 'a') as f:
     f.write((str("%s\n" % results)))

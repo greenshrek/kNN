@@ -1,9 +1,9 @@
+"""
+Author: Pranav Srivastava
+Detail: Basic KNN
+"""
 import numpy as np
 import sys
-
-
-
-#X_test = np.array([[4,7,1,9,3,2]])
 
 class KNNClassification:
 
@@ -47,19 +47,23 @@ class KNNClassification:
         class_vector_test = test_instance[:,self.num_of_features]
 
         knnResult = []
-        #print(class_vector)
+
         test_data_size = test_instance.shape[0]
         for i in range(0, test_data_size):
-            #print(test_instance[i])
+
             result = []
             temp_dict = {}
+
+            # send a single query instance to the get the predicrted class
             result = self.calculateDistances(training_data, test_instance[i])
             distances = result[0]
             ind = result[1]
             
+            #key value pair for the class and corresponding count is prepared below
             unique, counts = np.unique((np.take(class_vector_training, ind))[:,0:self.k], return_counts=True)
             temp_dict = dict(zip(unique, counts))
 
+            #class with maximum votes is saved as the classification
             maxvotes = max(temp_dict, key=temp_dict.get)
             print(maxvotes)
             knnResult.append(maxvotes)
@@ -68,29 +72,29 @@ class KNNClassification:
                 self.accurate_predictions +=1
 
         print(knnResult)
-        #print("accuracy: ", ((accurate_predictions/test_data_size)*100))
+        #accuracy percentage is calculated
         self.accuracy = ((self.accurate_predictions/test_data_size)*100)
 
+#load datasets into numpy array
 testdataset = np.genfromtxt('data/classification/testData.csv', delimiter=',')
 trainingdataset = np.genfromtxt('data/classification/trainingData.csv', delimiter=',')
-
-#trainingdataset = np.genfromtxt('trainingset.csv', delimiter=',')
-#testdataset = np.genfromtxt('test.csv', delimiter=',')
-
 
 k = int(sys.argv[1])
 filename = sys.argv[2]
 remark = sys.argv[3]
 
+#initializing the class
 knnc = KNNClassification(k, trainingdataset, testdataset)
 
 knnc.predictkNNClass()
 
+#create data for the results file
 results = []
 results.append(knnc.k)
 results.append(knnc.accuracy)
 results.append(filename)
 results.append(remark)
 
+#append results to the file
 with open('test_results.txt', 'a') as f:
     f.write((str("%s\n" % results)))
