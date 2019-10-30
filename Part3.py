@@ -1,9 +1,9 @@
 import numpy as np
 
-class WeightedKNN:
+class DistanceWeightedKNNRegression:
 
     def __init__(self, trainingdataset, testdataset):
-        self.num_of_features = 5
+        self.num_of_features = 12
         self.trainingdataset = trainingdataset
         self.testdataset = testdataset
         self.accurate_predictions = 0
@@ -27,12 +27,13 @@ class WeightedKNN:
         ind = np.argsort(result, axis=1) # sorts along last axis (across)
         return result, ind
 
-    def votesDW(self, distances, labeled_classes):
-        print(labeled_classes)
-        index_maxvotes = np.argmax(np.reciprocal(distances)/(np.sum(np.reciprocal(distances))))
+    def predictRegression(self, distances, testdata_regression):
 
-        print(np.argmax(np.reciprocal(distances)/(np.sum(np.reciprocal(distances)))))
-        return labeled_classes[0,index_maxvotes]
+        w = (np.sum(np.square(np.reciprocal(distances))))
+        wfx = np.sum(np.multiply(testdata_regression,np.square(np.reciprocal(distances))))
+        fx = wfx/w
+
+        return fx
 
     def predictkNNClass(self, k):
         training_data = self.trainingdataset
@@ -59,10 +60,10 @@ class WeightedKNN:
             ind = result[1]
             
             k_near_distances = (np.take(distances, ind))[:,0:k]
-            labeled_classes = (np.take(class_vector_training, ind))[:,0:k]
+            training_vector = (np.take(class_vector_training, ind))[:,0:k]
 
-            regressionValue = self.votesDW(k_near_distances, labeled_classes)
-            print(k_near_distances,labeled_classes)
+            regressionValue = self.predictRegression(k_near_distances, training_vector)
+            print(k_near_distances,training_vector)
             print("regressionValue>>",regressionValue)
 
             knnResult.append(regressionValue)
@@ -71,37 +72,41 @@ class WeightedKNN:
             #    self.accurate_predictions +=1
         self.predicted_regressions = np.array(knnResult)
         self.actual_regression = class_vector_test
-        #print(np.average(class_vector_test))
+        print("class vector test>>",class_vector_test)
         
-        self.r2metric(class_vector_test)
-        #print("predictions: ",knnResult)
-        print("accuracy: ", ((self.accurate_predictions/test_data_size)*100))
+        print("R2 metric is: ", self.r2metric())
 
-    def r2metric(self, actual):
+        #print("predictions>>> ",self.predicted_regressions)
+        #print("accuracy: ", ((self.accurate_predictions/test_data_size)*100))
+
+
+    def r2metric(self):
         #np.average(class_vector_test)
         pregressions = np.reshape(self.predicted_regressions, (1, self.predicted_regressions.shape[0]))
         actualreg = np.reshape(self.actual_regression, (1, self.actual_regression.shape[0]))
         avg = np.average(actualreg)
         #avg = np.array([[np.average(actualreg)]])
 
-        print("predicted regression: ",pregressions)
+        #print("predicted regression: ",pregressions)
 
-        print("actual regression: ",actualreg)
+        #print("actual regression: ",actualreg)
 
         sumofsquaredresiduals = -2 * np.dot(pregressions, actualreg.T) + np.sum(actualreg**2,    axis=1) + np.sum(pregressions**2, axis=1)[:, np.newaxis]
-        print("sum of residuals: ",sumofsquaredresiduals)
+        #print("sum of residuals: ",sumofsquaredresiduals[0][0])
 
-        totalsumofsquares = np.sum(np.square(pregressions - avg))
+        totalsumofsquares = np.sum(np.square(actualreg - avg))
 
-        print("total sum of squares", totalsumofsquares)
+        #print("total sum of squares", totalsumofsquares)
+        rsquare = 1-(sumofsquaredresiduals[0][0]/totalsumofsquares)
+        #print("rsquare", 1-(sumofsquaredresiduals[0][0]/totalsumofsquares))
+        return rsquare
 
-        print("rsquare", 1-(sumofsquaredresiduals/totalsumofsquares))
-#testdataset = np.genfromtxt('data/regression/testData.csv', delimiter=',')
-#trainingdataset = np.genfromtxt('data/regression/trainingData.csv', delimiter=',')
+testdataset = np.genfromtxt('data/regression/testData.csv', delimiter=',')
+trainingdataset = np.genfromtxt('data/regression/trainingData.csv', delimiter=',')
 
-trainingdataset = np.genfromtxt('trainingset.csv', delimiter=',')
-testdataset = np.genfromtxt('test.csv', delimiter=',')
+#trainingdataset = np.genfromtxt('trainingset.csv', delimiter=',')
+#testdataset = np.genfromtxt('test.csv', delimiter=',')
 
-wknn = WeightedKNN(trainingdataset, testdataset)
+dwknnr = DistanceWeightedKNNRegression(trainingdataset, testdataset)
 
-wknn.predictkNNClass(3)
+dwknnr.predictkNNClass(10)

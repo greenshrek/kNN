@@ -71,4 +71,4 @@ def predictkNNClass(training_data, test_instance, k):
     print("accuracy: ", ((accurate_predictions/test_data_size)*100))
 
 
-predictkNNClass(X_train, X_test, 1)
+predictkNNClass(X_train, X_test, 13)
