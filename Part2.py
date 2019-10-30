@@ -1,12 +1,15 @@
 import numpy as np
+import sys
 
-class WeightedKNN:
+class DistanceWeightedKNNClassification:
 
-    def __init__(self, trainingdataset, testdataset):
+    def __init__(self, k, trainingdataset, testdataset):
+        self.k = k
         self.num_of_features = 10
         self.trainingdataset = trainingdataset
         self.testdataset = testdataset
         self.accurate_predictions = 0
+        self.accuracy = 0
 
 
     def calculateDistances(self,training_data, test_instance):
@@ -39,7 +42,7 @@ class WeightedKNN:
             print(distances[0][i])
         return max(mapping, key=mapping.get)
 
-    def predictkNNClass(self, k):
+    def predictkNNClass(self):
         training_data = self.trainingdataset
         test_instance = self.testdataset
         
@@ -63,8 +66,8 @@ class WeightedKNN:
             distances = result[0]
             ind = result[1]
             
-            k_near_distances = (np.take(distances, ind))[:,0:k]
-            labeled_classes = (np.take(class_vector_training, ind))[:,0:k]
+            k_near_distances = (np.take(distances, ind))[:,0:self.k]
+            labeled_classes = (np.take(class_vector_training, ind))[:,0:self.k]
 
             voteDW = self.votesDW(k_near_distances, labeled_classes)
             print(k_near_distances,labeled_classes)
@@ -77,6 +80,7 @@ class WeightedKNN:
 
         print("predictions: ",knnResult)
         print("accuracy: ", ((self.accurate_predictions/test_data_size)*100))
+        self.accuracy = ((self.accurate_predictions/test_data_size)*100)
 
 
 testdataset = np.genfromtxt('data/classification/testData.csv', delimiter=',')
@@ -85,6 +89,20 @@ trainingdataset = np.genfromtxt('data/classification/trainingData.csv', delimite
 #trainingdataset = np.genfromtxt('trainingset.csv', delimiter=',')
 #testdataset = np.genfromtxt('test.csv', delimiter=',')
 
-wknn = WeightedKNN(trainingdataset, testdataset)
+k = int(sys.argv[1])
+filename = sys.argv[2]
+remark = sys.argv[3]
 
-wknn.predictkNNClass(10)
+
+dwknnc = DistanceWeightedKNNClassification(k, trainingdataset, testdataset)
+
+dwknnc.predictkNNClass()
+
+results = []
+results.append(dwknnc.k)
+results.append(dwknnc.accuracy)
+results.append(filename)
+results.append(remark)
+
+with open('test_results.txt', 'a') as f:
+    f.write((str("%s\n" % results)))

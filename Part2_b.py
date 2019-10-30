@@ -1,22 +1,24 @@
 import numpy as np
+import sys
 
-class WeightedKNN:
+class DistanceWeightedKNNClassification:
 
-    def __init__(self, trainingdataset, testdataset):
+    def __init__(self, k, trainingdataset, testdataset):
+        self.k = k
         self.num_of_features = 10
         self.trainingdataset = trainingdataset
         self.testdataset = testdataset
         self.accurate_predictions = 0
+        self.accuracy = 0
 
 
-    def calculateDistances(self,training_data, test_instance):
+    def calculateDistances(self, training_data, test_instance):
 
         result = np.empty(shape=[0,0])
         ind = np.empty(shape=[0])
 
-        #slice numpy array to leave the class columnn
-        training_data = training_data[:,:-1]
-        test_instance = test_instance[:-1]
+        #training_data = training_data[:,:-1]
+        #test_instance = test_instance[:-1]
         
         #reshaping the single query instance into 2d numpy so that it can be computed for eucledian distance
         test_instance = np.reshape(test_instance, (1, self.num_of_features))
@@ -39,16 +41,40 @@ class WeightedKNN:
             print(distances[0][i])
         return max(mapping, key=mapping.get)
 
-    def predictkNNClass(self, k):
-        training_data = self.trainingdataset
-        test_instance = self.testdataset
+
+
+    def minmaxscaler(self):
+    # This method and scales the training and test data using min-max scaling.
+    # It is one of the method that can potentially improve the accuracy of k-NN algorithm. 
+        
+        #slice numpy array to leave the class columnn
+        traindataset = self.trainingdataset[:,:-1]
+        testdataset = self.testdataset[:,:-1]
+        
+        min = traindataset.min(axis=0)
+        max = traindataset.max(axis=0)
+
+        n_train = traindataset-min
+        d_train = max-min
+
+        n_test = testdataset-min
+
+        return np.nan_to_num(np.divide(n_train,d_train)), np.nan_to_num(np.divide(n_test,d_train))
+
+
+
+
+    def predictkNNClass(self):
+        dataset = self.minmaxscaler()
+        training_data = dataset[0]
+        test_instance = dataset[1]
         
         result = np.empty(shape=[0,0])
         distances = np.empty(shape=[0,0])
         ind = np.empty(shape=[0])    
 
-        class_vector_training = training_data[:,self.num_of_features]
-        class_vector_test = test_instance[:,self.num_of_features]
+        class_vector_training = self.trainingdataset[:,self.num_of_features]
+        class_vector_test = self.testdataset[:,self.num_of_features]
 
         knnResult = []
 
@@ -63,8 +89,8 @@ class WeightedKNN:
             distances = result[0]
             ind = result[1]
             
-            k_near_distances = (np.take(distances, ind))[:,0:k]
-            labeled_classes = (np.take(class_vector_training, ind))[:,0:k]
+            k_near_distances = (np.take(distances, ind))[:,0:self.k]
+            labeled_classes = (np.take(class_vector_training, ind))[:,0:self.k]
 
             voteDW = self.votesDW(k_near_distances, labeled_classes)
             print(k_near_distances,labeled_classes)
@@ -77,7 +103,7 @@ class WeightedKNN:
 
         print("predictions: ",knnResult)
         print("accuracy: ", ((self.accurate_predictions/test_data_size)*100))
-
+        self.accuracy = ((self.accurate_predictions/test_data_size)*100)
 
 testdataset = np.genfromtxt('data/classification/testData.csv', delimiter=',')
 trainingdataset = np.genfromtxt('data/classification/trainingData.csv', delimiter=',')
@@ -85,6 +111,20 @@ trainingdataset = np.genfromtxt('data/classification/trainingData.csv', delimite
 #trainingdataset = np.genfromtxt('trainingset.csv', delimiter=',')
 #testdataset = np.genfromtxt('test.csv', delimiter=',')
 
-wknn = WeightedKNN(trainingdataset, testdataset)
+k = int(sys.argv[1])
+filename = sys.argv[2]
+remark = sys.argv[3]
 
-wknn.predictkNNClass(10)
+
+dwknnc = DistanceWeightedKNNClassification(k, trainingdataset, testdataset)
+
+dwknnc.predictkNNClass()
+
+results = []
+results.append(dwknnc.k)
+results.append(dwknnc.accuracy)
+results.append(filename)
+results.append(remark)
+
+with open('test_results.txt', 'a') as f:
+    f.write((str("%s\n" % results)))
